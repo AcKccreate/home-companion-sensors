@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Home Companion Sensors — AnchorWithin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080D;--s:#0E1018;--s2:#141722;--s3:#1A1E2E;
+  --b:rgba(255,255,255,.06);--ba:rgba(207,175,112,.2);
+  --gold:#CFAF70;--gold-b:#E4C97E;--gold-d:#8B7740;--gold-g:rgba(207,175,112,.08);
+  --green:#6EE7A0;--green-g:rgba(110,231,160,.06);
+  --amber:#FFD166;--amber-g:rgba(255,209,102,.06);
+  --red:#F47171;--red-g:rgba(244,113,113,.06);
+  --blue:#56A5FF;--blue-g:rgba(86,165,255,.06);
+  --t:#E8E4DD;--t2:#9B978F;--t3:#5E5B54;
+  --fd:'Instrument Serif',Georgia,serif;--fb:'Outfit',system-ui,sans-serif;
+  --r:14px;--rs:10px;--rx:6px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--fb);background:var(--bg);color:var(--t);min-height:100vh;-webkit-font-smoothing:antialiased}
+.hdr{text-align:center;padding:28px 20px 12px}
+.hdr-brand{font-size:.6rem;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.hdr h1{font-family:var(--fd);font-size:clamp(1.5rem,5vw,2.2rem);font-weight:400;color:var(--t);line-height:1.15}
+.hdr h1 em{font-style:italic;color:var(--gold)}
+.hdr .sub{font-size:.8rem;font-weight:300;color:var(--t2);margin-top:4px}
+
+.wrap{max-width:520px;margin:0 auto;padding:0 16px 100px}
+
+/* Status bar */
+.status-bar{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding:4px 0}
+.status-pill{flex-shrink:0;padding:6px 14px;border-radius:50px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:4px}
+.status-pill.ok{background:var(--green-g);color:var(--green);border:1px solid rgba(110,231,160,.15)}
+.status-pill.warn{background:var(--amber-g);color:var(--amber);border:1px solid rgba(255,209,102,.15)}
+.status-pill.low{background:var(--red-g);color:var(--red);border:1px solid rgba(244,113,113,.15)}
+.status-pill .sp-dot{width:6px;height:6px;border-radius:50%}
+.status-pill.ok .sp-dot{background:var(--green)}
+.status-pill.warn .sp-dot{background:var(--amber)}
+.status-pill.low .sp-dot{background:var(--red);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.card{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.card-label{font-size:.6rem;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--t3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-label::after{content:'';flex:1;height:1px;background:var(--b)}
+
+/* Sensor grid */
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sensor{background:var(--s2);border:1px solid var(--b);border-radius:var(--rs);padding:14px;transition:border-color .3s}
+.sensor.warn{border-color:rgba(255,209,102,.25)}
+.sensor.low{border-color:rgba(244,113,113,.3);animation:pulseRed 2s infinite}
+@keyframes pulseRed{0%,100%{box-shadow:none}50%{box-shadow:0 0 12px rgba(244,113,113,.15)}}
+.sensor-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sensor-icon{font-size:1.3rem}
+.sensor-name{font-size:.78rem;font-weight:600;color:var(--t);flex:1;line-height:1.2}
+.sensor-pct{font-size:.88rem;font-weight:700}
+.sensor-pct.ok{color:var(--green)}.sensor-pct.warn{color:var(--amber)}.sensor-pct.low{color:var(--red)}
+
+/* Level bar */
+.level-bar{height:6px;background:var(--s3);border-radius:6px;overflow:hidden;margin-bottom:6px}
+.level-fill{height:100%;border-radius:6px;transition:width 1s ease,background .5s}
+.level-fill.ok{background:var(--green)}.level-fill.warn{background:var(--amber)}.level-fill.low{background:var(--red)}
+
+.sensor-meta{font-size:.62rem;color:var(--t3);display:flex;justify-content:space-between}
+.sensor-forecast{color:var(--t2)}
+
+/* Shopping list */
+.shop-item{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--b)}
+.shop-item:last-child{border:none}
+.shop-icon{font-size:1.1rem}
+.shop-info{flex:1}
+.shop-name{font-size:.84rem;font-weight:600;color:var(--t)}
+.shop-detail{font-size:.65rem;color:var(--t3)}
+.shop-urgency{padding:3px 10px;border-radius:50px;font-size:.62rem;font-weight:700;flex-shrink:0}
+.shop-urgency.urgent{background:var(--red-g);color:var(--red)}
+.shop-urgency.soon{background:var(--amber-g);color:var(--amber)}
+
+/* Controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border:none;border-radius:var(--rs);font-family:var(--fb);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-gold{background:var(--gold);color:var(--bg)}
+.btn-gold:hover{background:var(--gold-b)}
+.btn-ghost{background:transparent;border:1px solid var(--gold-d);color:var(--gold)}
+.btn-ghost:hover{background:var(--gold-g)}
+.btn-wide{width:100%}
+.btn-row{display:flex;gap:8px}
+.btn-row .btn{flex:1}
+
+.sim-controls{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.sim-btn{padding:8px 14px;background:var(--s2);border:1px solid var(--b);border-radius:var(--rx);font-size:.72rem;font-weight:600;color:var(--t2);cursor:pointer;font-family:var(--fb);transition:all .15s}
+.sim-btn:hover{background:var(--s3);color:var(--t)}
+.sim-btn.active{background:var(--gold-g);border-color:var(--gold-d);color:var(--gold)}
+
+.hz-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:10px 24px;background:rgba(110,231,160,.12);border:1px solid rgba(110,231,160,.2);border-radius:50px;font-size:.78rem;font-weight:600;color:var(--green);z-index:100;display:none;backdrop-filter:blur(8px)}
+.hz-toast.show{display:flex;align-items:center;gap:6px;animation:slideDown .3s ease both}
+@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+.legal{text-align:center;padding:20px;font-size:.6rem;color:var(--t3)}
+.legal a{color:var(--gold-d);text-decoration:none}
+
+@media(max-width:400px){.sensor-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-brand">AnchorWithin</div>
+  <h1>Home <em>Companion</em></h1>
+  <div class="sub">Smart Sensors &middot; 432 Hz Alerts &middot; AI Shopping</div>
+</div>
+
+<div class="wrap">
+
+  <!-- Status Summary -->
+  <div class="status-bar" id="statusBar"></div>
+
+  <!-- Simulation Controls -->
+  <div class="card">
+    <div class="card-label">Simulation Controls</div>
+    <div class="sim-controls">
+      <button class="sim-btn active" id="simBtn" onclick="toggleSim()">&#9654; Simulating</button>
+      <button class="sim-btn" onclick="setSpeed(1)">1x Speed</button>
+      <button class="sim-btn active" onclick="setSpeed(5)">5x Speed</button>
+      <button class="sim-btn" onclick="setSpeed(20)">20x Speed</button>
+      <button class="sim-btn" onclick="refillAll()">&#10227; Refill All</button>
+    </div>
+    <div style="font-size:.68rem;color:var(--t3);font-style:italic">Sensors deplete in real-time. Speed up to see alerts faster. 432 Hz tone plays when items go critical.</div>
+  </div>
+
+  <!-- Sensor Grid -->
+  <div class="card">
+    <div class="card-label">Active Sensors (12)</div>
+    <div class="sensor-grid" id="sensorGrid"></div>
+  </div>
+
+  <!-- Shopping List -->
+  <div class="card">
+    <div class="card-label">AI Shopping List</div>
+    <div id="shopList"></div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-gold" onclick="copyShopList()">&#128203; Copy List</button>
+      <button class="btn btn-ghost" onclick="shareShopList()">&#128279; Share</button>
+    </div>
+  </div>
+
+  <div class="legal">
+    &copy; 2026 AnchorWithin LLC &bull; Sensor Simulator<br>
+    <a href="https://youtube.com/@AnchorWithin">YouTube</a> &middot; <a href="https://ko-fi.com/anchorwithin">Ko-fi</a>
+  </div>
+</div>
+
+<div class="hz-toast" id="hzToast">&#127925; 432 Hz Alert</div>
+
+<script>
+/* ═══════════════════════════════════════
+   SENSOR DATABASE
+   ═══════════════════════════════════════ */
+const SENSORS = [
+  { id:'toilet_paper',  name:'Toilet Paper',    icon:'\uD83E\uDDFB', fullWeight:250, emptyWeight:30,  depleteRate:3.5,  unit:'g' },
+  { id:'paper_towels',  name:'Paper Towels',    icon:'\uD83E\uDDFB', fullWeight:400, emptyWeight:40,  depleteRate:2.8,  unit:'g' },
+  { id:'trash_bags',    name:'Trash Bags',      icon:'\uD83D\uDDD1\uFE0F', fullWeight:800, emptyWeight:60,  depleteRate:1.5,  unit:'g' },
+  { id:'laundry_det',   name:'Laundry Detergent',icon:'\uD83E\uDDF4', fullWeight:2500,emptyWeight:200, depleteRate:4.0,  unit:'g' },
+  { id:'dish_soap',     name:'Dish Soap',       icon:'\uD83E\uDDFD', fullWeight:600, emptyWeight:80,  depleteRate:2.2,  unit:'g' },
+  { id:'water_filter',  name:'Water Filter',    icon:'\uD83D\uDCA7', fullWeight:1200,emptyWeight:150, depleteRate:5.0,  unit:'g' },
+  { id:'coffee',        name:'Coffee',          icon:'\u2615',       fullWeight:500, emptyWeight:30,  depleteRate:3.8,  unit:'g' },
+  { id:'pet_food',      name:'Pet Food',        icon:'\uD83D\uDC36', fullWeight:5000,emptyWeight:300, depleteRate:8.0,  unit:'g' },
+  { id:'hand_soap',     name:'Hand Soap',       icon:'\uD83E\uDDF4', fullWeight:350, emptyWeight:40,  depleteRate:1.8,  unit:'g' },
+  { id:'air_filter',    name:'HVAC Filter',     icon:'\uD83C\uDF2C\uFE0F', fullWeight:100, emptyWeight:0,   depleteRate:0.5,  unit:'days' },
+  { id:'cleaner',       name:'Cleaning Spray',  icon:'\u2728',       fullWeight:700, emptyWeight:80,  depleteRate:1.5,  unit:'g' },
+  { id:'baby_wipes',    name:'Baby Wipes',      icon:'\uD83D\uDC76', fullWeight:300, emptyWeight:20,  depleteRate:4.5,  unit:'g' },
+];
+
+let sensorState = [];
+let simRunning = true;
+let simSpeed = 5;
+let simInterval = null;
+let audioCtx = null;
+
+function initSensors() {
+  sensorState = SENSORS.map(s => ({
+    ...s,
+    currentWeight: s.fullWeight * (0.3 + Math.random() * 0.7), // Start at random 30-100%
+    lastAlert: 0,
+  }));
+}
+
+initSensors();
+
+/* ═══════════════════════════════════════
+   RENDERING
+   ═══════════════════════════════════════ */
+function render() {
+  const grid = document.getElementById('sensorGrid');
+  const statusBar = document.getElementById('statusBar');
+  const shopList = document.getElementById('shopList');
+
+  let okCount=0, warnCount=0, lowCount=0;
+  const needsList = [];
+
+  grid.innerHTML = sensorState.map(s => {
+    const range = s.fullWeight - s.emptyWeight;
+    const current = Math.max(s.currentWeight - s.emptyWeight, 0);
+    const pct = Math.min(Math.round((current / range) * 100), 100);
+    const status = pct > 30 ? 'ok' : pct > 10 ? 'warn' : 'low';
+
+    if (status === 'ok') okCount++;
+    else if (status === 'warn') { warnCount++; needsList.push({...s, pct, urgent:false}); }
+    else { lowCount++; needsList.push({...s, pct, urgent:true}); }
+
+    const daysLeft = s.depleteRate > 0 ? Math.round(current / (s.depleteRate * simSpeed)) : 99;
+    const forecast = daysLeft <= 0 ? 'Empty!' : daysLeft === 1 ? '~1 day left' : `~${daysLeft} days`;
+
+    return `
+      <div class="sensor ${status}" onclick="refillSensor('${s.id}')">
+        <div class="sensor-top">
+          <span class="sensor-icon">${s.icon}</span>
+          <span class="sensor-name">${s.name}</span>
+          <span class="sensor-pct ${status}">${pct}%</span>
+        </div>
+        <div class="level-bar"><div class="level-fill ${status}" style="width:${pct}%"></div></div>
+        <div class="sensor-meta">
+          <span>${Math.round(s.currentWeight)}${s.unit}</span>
+          <span class="sensor-forecast">${forecast}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Status pills
+  statusBar.innerHTML = `
+    <div class="status-pill ok"><span class="sp-dot"></span> ${okCount} OK</div>
+    ${warnCount > 0 ? `<div class="status-pill warn"><span class="sp-dot"></span> ${warnCount} Getting Low</div>` : ''}
+    ${lowCount > 0 ? `<div class="status-pill low"><span class="sp-dot"></span> ${lowCount} Need Now</div>` : ''}
+  `;
+
+  // Shopping list
+  needsList.sort((a,b) => a.pct - b.pct);
+  if (needsList.length === 0) {
+    shopList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--t3);font-style:italic">All supplies looking good! Nothing needed right now.</div>';
+  } else {
+    shopList.innerHTML = needsList.map(s => `
+      <div class="shop-item">
+        <span class="shop-icon">${s.icon}</span>
+        <div class="shop-info">
+          <div class="shop-name">${s.name}</div>
+          <div class="shop-detail">${s.pct}% remaining &middot; ${Math.round(s.currentWeight)}${s.unit} left</div>
+        </div>
+        <span class="shop-urgency ${s.urgent ? 'urgent' : 'soon'}">${s.urgent ? 'URGENT' : 'SOON'}</span>
+      </div>
+    `).join('');
+  }
+}
+
+/* ═══════════════════════════════════════
+   SIMULATION ENGINE
+   ═══════════════════════════════════════ */
+function simulate() {
+  sensorState.forEach(s => {
+    // Deplete based on rate + small random variance
+    const variance = 0.5 + Math.random();
+    s.currentWeight -= s.depleteRate * variance * (simSpeed / 5);
+    s.currentWeight = Math.max(s.currentWeight, s.emptyWeight * 0.8);
+
+    // Check for alert threshold
+    const range = s.fullWeight - s.emptyWeight;
+    const pct = ((s.currentWeight - s.emptyWeight) / range) * 100;
+
+    if (pct <= 10 && Date.now() - s.lastAlert > 10000) {
+      play432Alert();
+      showHzToast(s.name + ' is critically low!');
+      s.lastAlert = Date.now();
+    }
+  });
+  render();
+}
+
+function toggleSim() {
+  simRunning = !simRunning;
+  const btn = document.getElementById('simBtn');
+  if (simRunning) {
+    btn.textContent = '\u25B6 Simulating';
+    btn.classList.add('active');
+    startSim();
+  } else {
+    btn.textContent = '\u23F8 Paused';
+    btn.classList.remove('active');
+    clearInterval(simInterval);
+  }
+}
+
+function startSim() {
+  clearInterval(simInterval);
+  simInterval = setInterval(simulate, 1000);
+}
+
+function setSpeed(s) {
+  simSpeed = s;
+  document.querySelectorAll('.sim-btn').forEach(b => {
+    if (b.textContent.includes(s + 'x')) b.classList.add('active');
+    else if (b.textContent.includes('x Speed')) b.classList.remove('active');
+  });
+}
+
+function refillSensor(id) {
+  const s = sensorState.find(x => x.id === id);
+  if (s) { s.currentWeight = s.fullWeight; render(); }
+}
+
+function refillAll() {
+  sensorState.forEach(s => s.currentWeight = s.fullWeight);
+  render();
+}
+
+/* ═══════════════════════════════════════
+   432 Hz ALERT SYSTEM
+   ═══════════════════════════════════════ */
+function play432Alert() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = 432;
+  gain.gain.value = 0;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+
+  // Gentle swell — not harsh
+  gain.gain.setTargetAtTime(0.12, audioCtx.currentTime, 0.3);
+  gain.gain.setTargetAtTime(0, audioCtx.currentTime + 1.5, 0.3);
+  setTimeout(() => osc.stop(), 2500);
+}
+
+function showHzToast(msg) {
+  const el = document.getElementById('hzToast');
+  el.innerHTML = '\uD83C\uDFB5 432 Hz: ' + msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ═══════════════════════════════════════
+   SHOPPING LIST ACTIONS
+   ═══════════════════════════════════════ */
+function copyShopList() {
+  const needs = sensorState.filter(s => {
+    const range = s.fullWeight - s.emptyWeight;
+    return ((s.currentWeight - s.emptyWeight) / range) < 0.3;
+  });
+  if (needs.length === 0) { alert('Nothing needed right now!'); return; }
+  const text = 'Shopping List (AnchorWithin):\n' + needs.map(s => `\u2610 ${s.name}`).join('\n');
+  navigator.clipboard.writeText(text).then(() => alert('Shopping list copied!'));
+}
+
+function shareShopList() {
+  const needs = sensorState.filter(s => {
+    const range = s.fullWeight - s.emptyWeight;
+    return ((s.currentWeight - s.emptyWeight) / range) < 0.3;
+  });
+  const text = 'Need from the store:\n' + needs.map(s => `- ${s.name}`).join('\n');
+  if (navigator.share) {
+    navigator.share({ title: 'Shopping List', text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => alert('Copied!'));
+  }
+}
+
+/* ═══════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════ */
+render();
+startSim();
+</script>
+</body>
+</html>
